@@ -129,6 +129,7 @@ def csvsort(*,
                          debug=debug,)
     if debug:
         ic(reader)
+        import IPython; IPython.embed()
 
     if has_header:
         header = next(reader)
