@@ -81,7 +81,6 @@ def csvsort(*,
             parallel=True,
             quoting=csv.QUOTE_MINIMAL,
             encoding=None,
-            numeric_column=False,
             csv_reader=None,
             ):
     """Sort the CSV file on disk rather than in memory.
@@ -98,7 +97,6 @@ def csvsort(*,
         show_progress: A flag whether or not to show progress.
         quoting: How much quoting is needed in the final CSV file.  Default is csv.QUOTE_MINIMAL.
         encoding: The name of the encoding to use when opening or writing the csv files. Default is None which uses the system default.
-        numeric_column: If columns being used for sorting are all numeric and the desired output is to have the sorting be done numerically rather than string based. Default, False, does string-based sorting.
         csv_reader: a pre-loaded instance of `csv.reader`. This allows you to supply a compatible stream for use in sorting.
     """
 
@@ -135,7 +133,7 @@ def csvsort(*,
         if parallel:
             concurrency = multiprocessing.cpu_count()
             with multiprocessing.Pool(processes=concurrency) as pool:
-                map_args = [(filename, columns, numeric_column, verbose, debug, encoding) for filename in filenames]
+                map_args = [(filename, columns, verbose, debug, encoding) for filename in filenames]
                 if debug:
                     ic(map_args)
                 pool.starmap(memorysort, map_args)
@@ -143,7 +141,6 @@ def csvsort(*,
             for filename in filenames:
                 memorysort(filename=filename,
                            columns=columns,
-                           numeric_column=numeric_column,
                            encoding=encoding,
                            verbose=verbose,
                            debug=debug,
@@ -151,7 +148,6 @@ def csvsort(*,
 
         sorted_filename = mergesort(sorted_filenames=filenames,
                                     columns=columns,
-                                    numeric_column=numeric_column,
                                     encoding=encoding,
                                     verbose=verbose,
                                     debug=debug,
@@ -230,7 +226,6 @@ def csvsplit(*,
 
 def memorysort(filename: Path,
                columns,
-               numeric_column,
                verbose: bool = False,
                debug: bool = False,
                encoding=None,
@@ -245,7 +240,6 @@ def memorysort(filename: Path,
             ic(row)
     rows.sort(key=lambda row: get_key(row=row,
                                       columns=columns,
-                                      numeric_column=numeric_column,
                                       verbose=verbose,
                                       debug=debug,
                                       ))
@@ -261,28 +255,26 @@ def memorysort(filename: Path,
 def get_key(*,
             row,
             columns,
-            numeric_column,
             verbose: bool,
             debug: bool,
             ):
     """Get sort key for this row"""
-    if numeric_column:
-        answer = [float(row[column]) for column in columns]
-        if debug:
-            ic(answer)
-        return answer
-    else:
-        answer = [row[column] for column in columns]
+    answer = [row[column] for column in columns]
+    try:
         answer = [float(i) for i in answer]
+    except ValueError as e:
         if debug:
-            ic(answer)
-        return answer
+            ic(e)
+
+    if debug:
+        ic(answer)
+
+    return answer
 
 
 def decorated_csv(*,
                   filename: Path,
                   columns,
-                  numeric_column,
                   verbose: bool,
                   debug: bool,
                   encoding=None,
@@ -293,7 +285,6 @@ def decorated_csv(*,
         for row in csv.reader(fp):
             yield get_key(row=row,
                           columns=columns,
-                          numeric_column=numeric_column,
                           verbose=verbose,
                           debug=debug,
                           ), row
@@ -302,7 +293,6 @@ def decorated_csv(*,
 def mergesort(*,
               sorted_filenames,
               columns,
-              numeric_column,
               verbose: bool,
               debug: bool,
               nway=2,
@@ -321,7 +311,6 @@ def mergesort(*,
             for _, row in heapq.merge(*[
                     decorated_csv(filename=filename,
                                   columns=columns,
-                                  numeric_column=numeric_column,
                                   encoding=encoding,
                                   verbose=verbose,
                                   debug=debug,
