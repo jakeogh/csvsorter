@@ -273,6 +273,7 @@ def get_key(*,
         return answer
     else:
         answer = [row[column] for column in columns]
+        answer = [float(i) for i in answer]
         if debug:
             ic(answer)
         return answer
