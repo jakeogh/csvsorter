@@ -72,6 +72,7 @@ def csvsort(*,
             input_file: Path,
             output_file: Path,
             columns,
+            reverse: bool,
             verbose: bool,
             debug: bool,
             max_size=100,
@@ -133,7 +134,7 @@ def csvsort(*,
         if parallel:
             concurrency = multiprocessing.cpu_count()
             with multiprocessing.Pool(processes=concurrency) as pool:
-                map_args = [(filename, columns, verbose, debug, encoding) for filename in filenames]
+                map_args = [(filename, columns, reverse, verbose, debug, encoding) for filename in filenames]
                 if debug:
                     ic(map_args)
                 pool.starmap(memorysort, map_args)
@@ -141,6 +142,7 @@ def csvsort(*,
             for filename in filenames:
                 memorysort(filename=filename,
                            columns=columns,
+                           reverse=reverse,
                            encoding=encoding,
                            verbose=verbose,
                            debug=debug,
@@ -149,6 +151,7 @@ def csvsort(*,
         sorted_filename = mergesort(sorted_filenames=filenames,
                                     columns=columns,
                                     encoding=encoding,
+                                    reverse=reverse,
                                     verbose=verbose,
                                     debug=debug,
                                     )
@@ -226,6 +229,7 @@ def csvsplit(*,
 
 def memorysort(filename: Path,
                columns,
+               reverse: bool,
                verbose: bool = False,
                debug: bool = False,
                encoding=None,
@@ -242,7 +246,9 @@ def memorysort(filename: Path,
                                       columns=columns,
                                       verbose=verbose,
                                       debug=debug,
-                                      ))
+                                      ),
+              reverse=reverse,
+              )
     if debug:
         for row in rows:
             ic(row)
@@ -293,6 +299,7 @@ def decorated_csv(*,
 def mergesort(*,
               sorted_filenames,
               columns,
+              reverse: bool,
               verbose: bool,
               debug: bool,
               nway=2,
@@ -348,6 +355,7 @@ def mergesort(*,
 @click.option('--no-header', help='set CSV file has no header')
 @click.option('--delimiter', type=str, default=',', help='set CSV delimiter (default ",")')
 @click.option('--encoding', type=str, help='character encoding (eg utf-8) to use when reading/writing files (default uses system default)')
+@click.option('--reverse', is_flag=True)
 @click.option('--verbose', is_flag=True)
 @click.option('--debug', is_flag=True)
 @click.option("--printn", is_flag=True)
@@ -360,6 +368,7 @@ def cli(ctx,
         no_header: bool,
         delimiter: str,
         encoding: str,
+        reverse: bool,
         verbose: bool,
         debug: bool,
         printn: bool,
@@ -378,6 +387,7 @@ def cli(ctx,
     csvsort(input_file=input_file,
             output_file=output_file,
             columns=columns,
+            reverse=reverse,
             max_size=max_size,
             has_header=has_header,
             delimiter=delimiter,
