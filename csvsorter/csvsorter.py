@@ -268,7 +268,7 @@ def mergesort(sorted_filenames,
                                 allow_dash=True,),
                 nargs=1,
                 required=False,)
-@click.option('--column', 'columns', type=int, multiple=True, help='column(s) of CSV to sort on')
+@click.option('--column', '--field', 'columns', type=int, multiple=True, help='column(s) of CSV to sort on')
 @click.option('--max-size', type=int, default=100, help='maximum size of each split CSV file in MB (default 100)')
 @click.option('--no-header', help='set CSV file has no header')
 @click.option('--delimiter', type=str, default=',', help='set CSV delimiter (default ",")')
