@@ -84,8 +84,8 @@ def _get_reader(*,
         ic(input_file)
 
     with open(input_file, newline='', encoding=encoding) as input_fp:
-        return csv.reader(input_fp, delimiter=delimiter)
-
+        yield csv.reader(input_fp, delimiter=delimiter)
+    ic('exited with')
 
 def csvsort(*,
             input_file: Path,
@@ -129,7 +129,7 @@ def csvsort(*,
                          debug=debug,)
     if debug:
         ic(reader)
-        import IPython; IPython.embed()
+        #import IPython; IPython.embed()
 
     if has_header:
         header = next(reader)
