@@ -135,9 +135,9 @@ def csvsort(*,
         if parallel:
             concurrency = multiprocessing.cpu_count()
             with multiprocessing.Pool(processes=concurrency) as pool:
-                map_args = [(filename, columns, numeric_column, encoding)
-                            for filename in filenames]
-                ic(map_args)
+                map_args = [(filename, columns, numeric_column, verbose, debug, encoding) for filename in filenames]
+                if debug:
+                    ic(map_args)
                 pool.starmap(memorysort, map_args)
         else:
             for filename in filenames:
