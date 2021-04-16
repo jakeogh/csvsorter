@@ -51,7 +51,6 @@ class CsvSortError(Exception):
 #output_table = PrettyTable()
 
 
-
 def eprint(*args, **kwargs):
     if 'file' in kwargs.keys():
         kwargs.pop('file')
@@ -69,21 +68,31 @@ except ImportError:
 # from pudb import set_trace; set_trace(paused=False)
 
 
-
-def _get_reader(input_file, csv_reader, encoding, delimiter):
-    """Get the reader instance. This will either open the file, or
-    return the csv_reader supplied by the caller.
-    """
+def _get_reader(*,
+                input_file: Path,
+                csv_reader,
+                encoding: str,
+                delimiter: str,
+                verbose: bool,
+                debug: bool,
+                ):
+    """Get the reader instance. This will either open the file, or return the csv_reader supplied by the caller."""
     if csv_reader:
         return csv_reader
+
+    if debug:
+        ic(input_file)
 
     with open(input_file, newline='', encoding=encoding) as input_fp:
         return csv.reader(input_fp, delimiter=delimiter)
 
 
-def csvsort(input_file,
+def csvsort(*,
+            input_file: Path,
+            output_file: Path,
             columns,
-            output_file,
+            verbose: bool,
+            debug: bool,
             max_size=100,
             has_header=True,
             delimiter=',',
@@ -100,29 +109,27 @@ def csvsort(input_file,
 
     Args:
         input_file: the CSV filename to sort.
-        columns: a list of columns to sort on (can be 0 based indices or header
-            keys).
+        columns: a list of columns to sort on (can be 0 based indices or header keys).
         output_file: filename for sorted file.
         max_size: the maximum size (in MB) of CSV file to load in memory at once.
         has_header: whether the CSV contains a header to keep separated from sorting.
         delimiter: character used to separate fields, default ','.
         show_progress: A flag whether or not to show progress.
-            The default is False, which does not print any merge information.
-        quoting: How much quoting is needed in the final CSV file.  Default is
-            csv.QUOTE_MINIMAL.
-        encoding: The name of the encoding to use when opening or writing the
-            csv files. Default is None which uses the system default.
-        numeric_column: If columns being used for sorting are all numeric and
-            the desired output is to have the sorting be done numerically rather
-            than string based. Default, False, does string-based sorting
-        csv_reader: a pre-loaded instance of `csv.reader`. This allows you to
-            supply a compatible stream for use in sorting.
+        quoting: How much quoting is needed in the final CSV file.  Default is csv.QUOTE_MINIMAL.
+        encoding: The name of the encoding to use when opening or writing the csv files. Default is None which uses the system default.
+        numeric_column: If columns being used for sorting are all numeric and the desired output is to have the sorting be done numerically rather than string based. Default, False, does string-based sorting.
+        csv_reader: a pre-loaded instance of `csv.reader`. This allows you to supply a compatible stream for use in sorting.
     """
 
-    reader = _get_reader(input_file,
+    reader = _get_reader(input_file=input_file,
                          csv_reader=csv_reader,
                          encoding=encoding,
-                         delimiter=delimiter,)
+                         delimiter=delimiter,
+                         verbose=verbose,
+                         debug=debug,)
+    if debug:
+        ic(reader)
+
     if has_header:
         header = next(reader)
     else:
@@ -143,6 +150,7 @@ def csvsort(input_file,
     else:
         for filename in filenames:
             memorysort(filename, columns, numeric_column, encoding)
+
     sorted_filename = mergesort(filenames,
                                 columns,
                                 numeric_column,
@@ -318,7 +326,10 @@ def cli(ctx,
             max_size=max_size,
             has_header=has_header,
             delimiter=delimiter,
-            encoding=encoding)
+            encoding=encoding,
+            verbose=verbose,
+            debug=debug,
+            )
 
 #        if ipython:
 #            import IPython; IPython.embed()
