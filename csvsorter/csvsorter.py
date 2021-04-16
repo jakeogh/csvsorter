@@ -306,11 +306,11 @@ def cli(ctx,
 
     has_header = not no_header
 
-    input_file = Path(input_file)
-    output_file = Path(output_file)
-
     if not output_file:
         output_file = '/dev/stdout'
+
+    input_file = Path(input_file)
+    output_file = Path(output_file)
 
     csvsort(input_file=input_file,
             output_file=output_file,
