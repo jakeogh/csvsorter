@@ -113,9 +113,22 @@ def csvsort(*,
         else:
             header = None
 
-        columns = parse_columns(columns, header)
+        columns = parse_columns(columns=columns,
+                                header=header,
+                                verbose=verbose,
+                                debug=debug,
+                                )
+        if debug:
+            ic(columns)
 
-        filenames = csvsplit(reader, max_size)
+        filenames = csvsplit(reader=reader,
+                             max_size=max_size,
+                             verbose=verbose,
+                             debug=debug,
+                             )
+        if debug:
+            ic(filenames)
+
         if show_progress:
             logging.info('Merging %d splits' % len(filenames))
 
@@ -127,12 +140,21 @@ def csvsort(*,
                 pool.starmap(memorysort, map_args)
         else:
             for filename in filenames:
-                memorysort(filename, columns, numeric_column, encoding)
+                memorysort(filename=filename,
+                           columns=columns,
+                           numeric_column=numeric_column,
+                           encoding=encoding,
+                           verbose=verbose,
+                           debug=debug,
+                           )
 
-        sorted_filename = mergesort(filenames,
-                                    columns,
-                                    numeric_column,
-                                    encoding=encoding)
+        sorted_filename = mergesort(sorted_filenames=filenames,
+                                    columns=columns,
+                                    numeric_column=numeric_column,
+                                    encoding=encoding,
+                                    verbose=verbose,
+                                    debug=debug,
+                                    )
 
         # XXX make more efficient by passing quoting, delimiter, and moving result
         # generate the final output file
@@ -150,7 +172,12 @@ def csvsort(*,
         os.remove(sorted_filename)
 
 
-def parse_columns(columns, header):
+def parse_columns(*,
+                  columns,
+                  header,
+                  verbose: bool,
+                  debug: bool,
+                  ):
     """check the provided column headers"""
     for i, column in enumerate(columns):
         if isinstance(column, int):
@@ -173,7 +200,12 @@ def parse_columns(columns, header):
     return columns
 
 
-def csvsplit(reader, max_size):
+def csvsplit(*,
+             reader,
+             max_size: int,
+             verbose: bool,
+             debug: bool,
+             ):
     """Split into smaller CSV files of maximum size and return the filenames."""
     max_size = max_size * 1024 * 1024  # convert to bytes
     writer = None
@@ -195,39 +227,73 @@ def csvsplit(reader, max_size):
     return split_filenames
 
 
-def memorysort(filename, columns, numeric_column, encoding=None):
+def memorysort(*,
+               filename: Path,
+               columns,
+               numeric_column,
+               verbose: bool,
+               debug: bool,
+               encoding=None,
+               ):
     """Sort this CSV file in memory on the given columns"""
     with open(filename, newline='', encoding=encoding) as input_fp:
         rows = [row for row in csv.reader(input_fp) if row]
 
-    rows.sort(key=lambda row: get_key(row, columns, numeric_column))
+    rows.sort(key=lambda row: get_key(row=row,
+                                      columns=columns,
+                                      numeric_column=numeric_column,
+                                      verbose=verbose,
+                                      debug=debug,
+                                      ))
     with open(filename, 'w', newline='', encoding=encoding) as output_fp:
         writer = csv.writer(output_fp)
         for row in rows:
             writer.writerow(row)
 
 
-def get_key(row, columns, numeric_column):
+def get_key(*,
+            row,
+            columns,
+            numeric_column,
+            verbose: bool,
+            debug: bool,
+            ):
     """Get sort key for this row"""
-    if (numeric_column):
+    if numeric_column:
         return [float(row[column]) for column in columns]
     else:
         return [row[column] for column in columns]
 
 
-def decorated_csv(filename, columns, numeric_column, encoding=None):
+def decorated_csv(*,
+                  filename: Path,
+                  columns,
+                  numeric_column,
+                  verbose: bool,
+                  debug: bool,
+                  encoding=None,
+                  ):
     """Iterator to sort CSV rows
     """
     with open(filename, newline='', encoding=encoding) as fp:
         for row in csv.reader(fp):
-            yield get_key(row, columns, numeric_column), row
+            yield get_key(row=row,
+                          columns=columns,
+                          numeric_column=numeric_column,
+                          verbose=verbose,
+                          debug=debug,
+                          ), row
 
 
-def mergesort(sorted_filenames,
+def mergesort(*,
+              sorted_filenames,
               columns,
               numeric_column,
+              verbose: bool,
+              debug: bool,
               nway=2,
-              encoding=None):
+              encoding=None,
+              ):
     """Merge these 2 sorted csv files into a single output file
     """
     merge_n = 0
@@ -239,7 +305,13 @@ def mergesort(sorted_filenames,
             writer = csv.writer(output_fp)
             merge_n += 1
             for _, row in heapq.merge(*[
-                    decorated_csv(filename, columns, numeric_column, encoding)
+                    decorated_csv(filename=filename,
+                                  columns=columns,
+                                  numeric_column=numeric_column,
+                                  encoding=encoding,
+                                  verbose=verbose,
+                                  debug=debug,
+                                  )
                     for filename in merge_filenames
             ]):
                 writer.writerow(row)
@@ -291,6 +363,8 @@ def cli(ctx,
         ):
 
     has_header = not no_header
+    if debug:
+        show_progress = True
 
     if not output_file:
         output_file = '/dev/stdout'
