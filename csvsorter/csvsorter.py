@@ -228,12 +228,11 @@ def csvsplit(*,
     return split_filenames
 
 
-def memorysort(*,
-               filename: Path,
+def memorysort(filename: Path,
                columns,
                numeric_column,
-               verbose: bool,
-               debug: bool,
+               verbose: bool = False,
+               debug: bool = False,
                encoding=None,
                ):
     """Sort this CSV file in memory on the given columns"""
