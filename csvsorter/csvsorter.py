@@ -241,13 +241,17 @@ def memorysort(filename: Path,
 
     if debug:
         ic(columns)
-        ic(rows)
+        for row in rows:
+            ic(row)
     rows.sort(key=lambda row: get_key(row=row,
                                       columns=columns,
                                       numeric_column=numeric_column,
                                       verbose=verbose,
                                       debug=debug,
                                       ))
+    if debug:
+        for row in rows:
+            ic(row)
     with open(filename, 'w', newline='', encoding=encoding) as output_fp:
         writer = csv.writer(output_fp)
         for row in rows:
