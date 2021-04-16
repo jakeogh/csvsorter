@@ -240,6 +240,7 @@ def memorysort(filename: Path,
         rows = [row for row in csv.reader(input_fp) if row]
 
     if debug:
+        ic(columns)
         ic(rows)
     rows.sort(key=lambda row: get_key(row=row,
                                       columns=columns,
@@ -262,9 +263,15 @@ def get_key(*,
             ):
     """Get sort key for this row"""
     if numeric_column:
-        return [float(row[column]) for column in columns]
+        answer = [float(row[column]) for column in columns]
+        if debug:
+            ic(answer)
+        return answer
     else:
-        return [row[column] for column in columns]
+        answer = [row[column] for column in columns]
+        if debug:
+            ic(answer)
+        return answer
 
 
 def decorated_csv(*,
