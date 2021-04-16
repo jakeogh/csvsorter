@@ -239,6 +239,8 @@ def memorysort(filename: Path,
     with open(filename, newline='', encoding=encoding) as input_fp:
         rows = [row for row in csv.reader(input_fp) if row]
 
+    if debug:
+        ic(rows)
     rows.sort(key=lambda row: get_key(row=row,
                                       columns=columns,
                                       numeric_column=numeric_column,
