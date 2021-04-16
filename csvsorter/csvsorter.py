@@ -68,25 +68,6 @@ except ImportError:
 # from pudb import set_trace; set_trace(paused=False)
 
 
-def _get_reader(*,
-                input_file: Path,
-                csv_reader,
-                encoding: str,
-                delimiter: str,
-                verbose: bool,
-                debug: bool,
-                ):
-    """Get the reader instance. This will either open the file, or return the csv_reader supplied by the caller."""
-    if csv_reader:
-        return csv_reader
-
-    if debug:
-        ic(input_file)
-
-    with open(input_file, newline='', encoding=encoding) as input_fp:
-        yield csv.reader(input_fp, delimiter=delimiter)
-    ic('exited with')
-
 def csvsort(*,
             input_file: Path,
             output_file: Path,
@@ -121,56 +102,52 @@ def csvsort(*,
         csv_reader: a pre-loaded instance of `csv.reader`. This allows you to supply a compatible stream for use in sorting.
     """
 
-    reader = _get_reader(input_file=input_file,
-                         csv_reader=csv_reader,
-                         encoding=encoding,
-                         delimiter=delimiter,
-                         verbose=verbose,
-                         debug=debug,)
-    if debug:
-        ic(reader)
-        #import IPython; IPython.embed()
+    with open(input_file, newline='', encoding=encoding) as input_fp:
+        reader = csv.reader(input_fp, delimiter=delimiter)
+        if debug:
+            ic(reader)
+            #import IPython; IPython.embed()
 
-    if has_header:
-        header = next(reader)
-    else:
-        header = None
+        if has_header:
+            header = next(reader)
+        else:
+            header = None
 
-    columns = parse_columns(columns, header)
+        columns = parse_columns(columns, header)
 
-    filenames = csvsplit(reader, max_size)
-    if show_progress:
-        logging.info('Merging %d splits' % len(filenames))
+        filenames = csvsplit(reader, max_size)
+        if show_progress:
+            logging.info('Merging %d splits' % len(filenames))
 
-    if parallel:
-        concurrency = multiprocessing.cpu_count()
-        with multiprocessing.Pool(processes=concurrency) as pool:
-            map_args = [(filename, columns, numeric_column, encoding)
-                        for filename in filenames]
-            pool.starmap(memorysort, map_args)
-    else:
-        for filename in filenames:
-            memorysort(filename, columns, numeric_column, encoding)
+        if parallel:
+            concurrency = multiprocessing.cpu_count()
+            with multiprocessing.Pool(processes=concurrency) as pool:
+                map_args = [(filename, columns, numeric_column, encoding)
+                            for filename in filenames]
+                pool.starmap(memorysort, map_args)
+        else:
+            for filename in filenames:
+                memorysort(filename, columns, numeric_column, encoding)
 
-    sorted_filename = mergesort(filenames,
-                                columns,
-                                numeric_column,
-                                encoding=encoding)
+        sorted_filename = mergesort(filenames,
+                                    columns,
+                                    numeric_column,
+                                    encoding=encoding)
 
-    # XXX make more efficient by passing quoting, delimiter, and moving result
-    # generate the final output file
-    with open(output_file,
-              'w',
-              newline='',
-              encoding=encoding) as output_fp:
-        writer = csv.writer(output_fp, delimiter=delimiter, quoting=quoting)
-        if header:
-            writer.writerow(header)
-        with open(sorted_filename, newline='', encoding=encoding) as sorted_fp:
-            for row in csv.reader(sorted_fp):
-                writer.writerow(row)
+        # XXX make more efficient by passing quoting, delimiter, and moving result
+        # generate the final output file
+        with open(output_file,
+                  'w',
+                  newline='',
+                  encoding=encoding) as output_fp:
+            writer = csv.writer(output_fp, delimiter=delimiter, quoting=quoting)
+            if header:
+                writer.writerow(header)
+            with open(sorted_filename, newline='', encoding=encoding) as sorted_fp:
+                for row in csv.reader(sorted_fp):
+                    writer.writerow(row)
 
-    os.remove(sorted_filename)
+        os.remove(sorted_filename)
 
 
 def parse_columns(columns, header):
